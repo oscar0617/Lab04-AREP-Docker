@@ -1,6 +1,6 @@
-# MicroSpring
+# MicroSpring using Docker and EC2
  
-In this project we will review a lightweight web server  without using Spring Boot. It processes custom annotations to expose RESTful web services dynamically. The main goal of this project is to build a micro-framework, allowing developers to define controllers, endpoints, and request parameters using Java annotations.
+In this project we will review a lightweight web server  without using Spring Boot. It processes custom annotations to expose RESTful web services dynamically. The main goal of this project is to build a micro-framework, allowing developers to define controllers, endpoints, and request parameters using Java annotations. In this case, we are deploying our MicroServer on EC2 using Docker.
 
 
 ![Demo](images/demo.gif)
@@ -42,14 +42,22 @@ You need to install the following tools to run the project:
     ```
     git version 2.44.0
     ```
+4. Docker
+    ```
+    docker --version
+    ```
+    It should appear something like this:
+    ```
+    Docker version 27.3.1, build ce12230
+    ```
 
-### Installing
+### Installing locally
 
 1. Clone this repository and go to project directory:
     ```
-    git clone https://github.com/oscar0617/Lab03-AREP-MicroSpring
+    git clone https://github.com/oscar0617/Lab04-AREP-Docker
 
-    cd Lab03-AREP-MicroSpring
+    cd Lab04-AREP-Docker
     ```
 2. Build the project:
     ```
@@ -57,14 +65,16 @@ You need to install the following tools to run the project:
     ```
     Should appear something like this:
     ```
-    [INFO] Building jar: C:\Users\luzma\Desktop\AREP\Lab03-AREP-MicroSpring\target\Lab03-AREP-MicroSpring-1.0-SNAPSHOT.jar
     [INFO] ------------------------------------------------------------------------
     [INFO] BUILD SUCCESS
+    [INFO] ------------------------------------------------------------------------
+    [INFO] Total time:  6.194 s
+    [INFO] Finished at: 2025-02-14T20:03:54-05:00
     [INFO] ------------------------------------------------------------------------
     ```
 3. Run the project:
     ```
-    java -cp target/Lab03-AREP-MicroSpring-1.0-SNAPSHOT.jar edu.escuelaing.arep.MicroServer
+    mvn exec:java
     ```
     Should appear something like this:
     ```
@@ -77,6 +87,62 @@ You need to install the following tools to run the project:
     Listo para recibir ...
     ```
 Now you are able to access into the ```index.html```. Using the following URL: ```http://localhost:8080/index.html```
+
+If you want to close the server in an elegant way, you only have to type in your terminal ```ctrl+c``` and it will show you something like this:
+
+```
+  Cerrando servidor...
+
+  Servidor apagado correctamente.
+```
+
+### Installing on EC2 using Docker
+
+Keep in mind that you will need an active AWS account and Docker to run this project on cloud.
+
+1. Clone this repository and go to project directory:
+    ```
+    git clone https://github.com/oscar0617/Lab04-AREP-Docker
+
+    cd Lab04-AREP-Docker
+    ```
+2. Check that your Dockerfile looks similar to this one:
+    ```
+    FROM openjdk:17
+
+    WORKDIR /usrapp/bin
+
+    ENV PORT=8080
+
+    COPY /target/classes /usrapp/bin/classes
+    COPY /target/dependency /usrapp/bin/dependency
+    COPY src/main/java/edu/escuelaing/arep/resources src/main/java/edu/escuelaing/arep/resources
+
+    CMD ["java","-cp","./classes:./dependency/*","edu.escuelaing.arep.MicroServer"]
+    ```
+    In this file, you will copy the necessary files into the virtual machine of docker to run the project.
+    In the section ``` COPY src/main/java/edu/escuelaing/arep/resources src/main/java/edu/escuelaing/arep/resources ``` we are going to copy the resources to the same path on the virtual machine to avoid any problem on the path in our source code.
+3. Create the docker image (Check that you are running the docker service, otherwise this will not work).
+  ```
+  docker build --tag dockerlab04arep .
+  ```
+4. Copy your image to push it into Dockerhub (You need an account on that platform)
+  ```
+  docker tag dockerlab04arep oscar0617/lab04-arep-docker-virtualization
+  ```
+5. Push the image into the repository
+  ```
+  docker push oscar0617/lab04-arep-docker-virtualization:latest 
+  ```
+  Be careful at this point, you need to create a repository and follow the instructions there. In this case you will use my image from my repository to use it on EC2.
+6. Start an Instansce of EC2 on AWS and go into the instance using your prefered method. For this project I'm going to connect via SSH using CMD
+7. Install docker on the EC2 Instance
+8. Run the docker image using this command:
+  ```
+  docker run -d -p 42000:8080 --name firstdockerimageaws oscar0617/lab04-arep-docker-virtualization
+  ```
+  And we access into it with this URL: [http://ec2-34-207-192-45.compute-1.amazonaws.com:42000](http://ec2-34-207-192-45.compute-1.amazonaws.com:42000)
+
 
 ## Architecture
 
@@ -260,11 +326,14 @@ The following unit tests were created to validate the functionality of the `Micr
 
 The **MicroSpring Server** project successfully demonstrates the implementation of a lightweight, annotation-based web framework built from scratch in Java. By leveraging Java reflection and custom annotations, the server dynamically registers and processes RESTful endpoints, similar to traditional frameworks like Spring Boot but without external dependencies.
 
+We saw the utility using Docker as virtualization tool to move our project between machines using the portability.
+
 
 ## Built With
 
 * [Maven](https://maven.apache.org/) - Dependency Management
 * [GIT](https://git-scm.com) - Version control
+* [Docker](https://www.docker.com) - Virtualization
 
 
 ## Versioning
@@ -275,7 +344,7 @@ I use [GitHub](http://git-scm.com) for versioning.
 
 * **Oscar Santiago Lesmes Parra** - [oscar0617](https://github.com/oscar0617)
 
-Date: 07/02/2025
+Date: 14/02/2025
 ## License
 
 This project is licensed under the GNU.
